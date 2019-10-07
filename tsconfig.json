@@ -5,18 +5,11 @@
     "noImplicitAny": true,
     "module": "commonjs",
     "target": "es5",
-    "lib": [
-      "es5",
-      "dom",
-      "scripthost",
-      "es2015"
-    ],
+    "strict": true,
+    "strictNullChecks": true,
+    "lib": ["es5", "dom", "scripthost", "es2015"],
     "jsx": "react",
     "declaration": true
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "test"
-  ]
+  "exclude": ["node_modules", "dist", "test"]
 }

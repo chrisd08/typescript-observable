@@ -6,35 +6,35 @@ import {TestRootEvent} from "./events";
 describe('ChangeObservable', () => {
     describe('hasChanged', () => {
         it('should be false by default', () => {
-            let observable = new ChangeObservable();
+            const observable = new ChangeObservable();
 
-            expect(observable.hasChanged()).to.equal(false);
+            expect(observable.isChanged).to.equal(false);
         });
 
-        it('should change to true when setChanged is called', () => {
-            let observable = new ChangeObservable();
+        it('should be able to set isChanged to true', () => {
+            const observable = new ChangeObservable();
 
-            observable.setChanged();
+            observable.isChanged = true;
 
-            expect(observable.hasChanged()).to.equal(true);
+            expect(observable.isChanged).to.equal(true);
         });
 
-        it('should be set to false when clearChanged is called', () => {
-            let observable = new ChangeObservable();
+        it('should be able to set isChanged to false', () => {
+            const observable = new ChangeObservable();
 
-            observable.setChanged();
-            observable.clearChanged();
+            observable.isChanged = true;
+            observable.isChanged = false;
 
-            expect(observable.hasChanged()).to.equal(false);
+            expect(observable.isChanged).to.equal(false);
         });
 
         it('should be false when notify is called', () => {
-            let observable = new ChangeObservable();
+            const observable = new ChangeObservable();
 
-            observable.setChanged();
+            observable.isChanged = true;;
             observable.notify(new TestRootEvent(), {});
 
-            expect(observable.hasChanged()).to.equal(false);
+            expect(observable.isChanged).to.equal(false);
         });
     });
 });

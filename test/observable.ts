@@ -1,395 +1,388 @@
-import 'mocha'
-import { expect } from 'chai'
+import "mocha";
+import { expect } from "chai";
 
-import {TestChildEvent, TestGrandChildEvent, TestRootEvent} from "./events";
-import {Observable} from '../src/index'
-
+import { TestChildEvent, TestGrandChildEvent, TestRootEvent } from "./events";
+import { Observable, ICancel, IObserver } from "../src";
 
 const NUM_OF_OBSERVERS_TO_ADD = 10;
 
-describe('Observable', () => {
-    describe('on', () => {
+describe("Observable", () => {
+  describe("on", () => {
+    it("should be possible to listen to a string and a IObservableEvent", () => {
+      const observable = new Observable();
 
-        it('should be possible to listen to a string and a IObservableEvent', () => {
-            let observable = new Observable();
-
-            observable.on('test', () => {});
-            observable.on(new TestRootEvent(), () => {});
-            observable.on('test', {
-                update: () => {}
-            });
-            observable.on(new TestRootEvent(), {
-                update: () => {}
-            });
-        });
-
-        it('should return a ICancel object', () => {
-            let observable = new Observable(),
-                cancelFromString = observable.on('test', () => {}),
-                cancelFromEvent = observable.on(new TestRootEvent(), () => {});
-
-            expect(cancelFromString).to.haveOwnProperty('cancel');
-            expect(cancelFromEvent).to.haveOwnProperty('cancel');
-        });
+      observable.on("test", () => {});
+      observable.on(new TestRootEvent(), () => {});
+      observable.on("test", {
+        update: () => {},
+      });
+      observable.on(new TestRootEvent(), {
+        update: () => {},
+      });
     });
 
-    describe('notifty', () => {
+    it("should return a ICancel object", () => {
+      const observable = new Observable(),
+        cancelFromString = observable.on("test", () => {}),
+        cancelFromEvent = observable.on(new TestRootEvent(), () => {});
 
-        it('should call the callback', done => {
-            let observable = new Observable(),
-                flags : { [index : string] : boolean} = {
-                    stringFunction: false,
-                    stringObserver: false,
-                    eventFunction: false,
-                    eventObserver: false,
-                    not: true
-                };
+      expect(cancelFromString).to.haveOwnProperty("cancel");
+      expect(cancelFromEvent).to.haveOwnProperty("cancel");
+    });
+  });
 
-            observable.on('test-root', () => {
-                flags['stringFunction'] = true;
-                finishTest();
-            });
+  describe("notifty", () => {
+    it("should call the callback", done => {
+      const observable = new Observable(),
+        flags: { [index: string]: boolean } = {
+          stringFunction: false,
+          stringObserver: false,
+          eventFunction: false,
+          eventObserver: false,
+          not: true,
+        };
 
-            observable.on('test-root', {
-                update: () => {
-                    flags['stringObserver'] = true;
-                    finishTest();
-                }
-            });
+      // Check that the right flags are set
+      const finishTest = (): void => {
+        if (flags["not"] === false) {
+          done(new Error('"not-test-root" should not be called '));
+        }
 
-            observable.on(new TestRootEvent(), () => {
-                flags['eventFunction'] = true;
-                finishTest();
-            });
+        if (Object.keys(flags).every(key => flags[key])) {
+          done();
+        }
+      };
 
-            observable.on(new TestRootEvent(), {
-                update: () => {
-                    flags['eventObserver'] = true;
-                    finishTest();
-                }
-            });
+      observable.on("test-root", () => {
+        flags["stringFunction"] = true;
+        finishTest();
+      });
 
-            observable.on('not-test-root', () => {
-                flags['not'] = false;
-                finishTest();
-            });
+      observable.on("test-root", {
+        update: () => {
+          flags["stringObserver"] = true;
+          finishTest();
+        },
+      });
 
-            observable.notify(new TestRootEvent(), {});
+      observable.on(new TestRootEvent(), () => {
+        flags["eventFunction"] = true;
+        finishTest();
+      });
 
-            // Check that the right flags are set
-            function finishTest() {
-                if (flags['not'] === false) {
-                    done(new Error('"not-test-root" should not be called '));
-                }
+      observable.on(new TestRootEvent(), {
+        update: () => {
+          flags["eventObserver"] = true;
+          finishTest();
+        },
+      });
 
-                if (Object.keys(flags).every(key => flags[key])) {
-                    done();
-                }
-            }
-        });
+      observable.on("not-test-root", () => {
+        flags["not"] = false;
+        finishTest();
+      });
 
-        it('should propagate to parent events', done => {
-            let observable = new Observable(),
-                flags : { [index : string] : boolean } = {
-                    stringChild: false,
-                    stringParent: false,
-                    eventChild: false,
-                    eventParent: false,
-                    not: true
-                };
+      observable.notify(new TestRootEvent(), {});
+    });
 
-            observable.on('test-child', () => {
-                flags['stringChild'] = true;
-                finishTest();
-            });
+    it("should propagate to parent events", done => {
+      const observable = new Observable(),
+        flags: { [index: string]: boolean } = {
+          stringChild: false,
+          stringParent: false,
+          eventChild: false,
+          eventParent: false,
+          not: true,
+        };
 
-            observable.on('test-root', () => {
-                flags['stringParent'] = true;
-                finishTest();
-            });
+      // Check that the right flags are set
+      const finishTest = (): void => {
+        if (flags["not"] === false) {
+          done(new Error('"not-test-root" should not be called '));
+        }
 
-            observable.on(new TestChildEvent(), () => {
-                flags['eventChild'] = true;
-                finishTest();
-            });
+        if (Object.keys(flags).every(key => flags[key])) {
+          done();
+        }
+      };
 
-            observable.on(new TestRootEvent(), () => {
-                flags['eventParent'] = true;
-                finishTest();
-            });
+      observable.on("test-child", () => {
+        flags["stringChild"] = true;
+        finishTest();
+      });
 
-            observable.on(new TestGrandChildEvent(), () => {
-                flags['not'] = false;
-                finishTest();
-            });
+      observable.on("test-root", () => {
+        flags["stringParent"] = true;
+        finishTest();
+      });
 
-            observable.notify(new TestChildEvent(), {});
+      observable.on(new TestChildEvent(), () => {
+        flags["eventChild"] = true;
+        finishTest();
+      });
 
-            // Check that the right flags are set
-            function finishTest() {
-                if (flags['not'] === false) {
-                    done(new Error('"not-test-root" should not be called '));
-                }
+      observable.on(new TestRootEvent(), () => {
+        flags["eventParent"] = true;
+        finishTest();
+      });
 
-                if (Object.keys(flags).every(key => flags[key])) {
-                    done();
-                }
-            }
-        });
+      observable.on(new TestGrandChildEvent(), () => {
+        flags["not"] = false;
+        finishTest();
+      });
 
-        it('should propagate multiple steps', done => {
-            let observable = new Observable(),
-                flags : { [index : string] : boolean } = {
-                    root: false,
-                    child: false,
-                    grandChild: false
-                };
+      observable.notify(new TestChildEvent(), {});
+    });
 
-            observable.on('test-grand-child', () => {
-                flags['grandChild'] = true;
-                finishTest();
-            });
+    it("should propagate multiple steps", done => {
+      const observable = new Observable(),
+        flags: { [index: string]: boolean } = {
+          root: false,
+          child: false,
+          grandChild: false,
+        };
 
-            observable.on('test-child', () => {
-                flags['child'] = true;
-                finishTest();
-            });
+      // Check that the right flags are set
+      const finishTest = (): void => {
+        if (Object.keys(flags).every(key => flags[key])) {
+          done();
+        }
+      };
 
-            observable.on('test-root', () => {
-                flags['root'] = true;
-                finishTest();
-            });
+      observable.on("test-grand-child", () => {
+        flags["grandChild"] = true;
+        finishTest();
+      });
 
-            observable.notify(new TestGrandChildEvent(), {});
+      observable.on("test-child", () => {
+        flags["child"] = true;
+        finishTest();
+      });
 
-            // Check that the right flags are set
-            function finishTest() {
-                if (Object.keys(flags).every(key => flags[key])) {
-                    done();
-                }
-            }
-        });
+      observable.on("test-root", () => {
+        flags["root"] = true;
+        finishTest();
+      });
 
-        it('should carry data to the observer', done => {
-            let observable = new Observable(),
-                data = {},
-                numOfFunctions = 4;
+      observable.notify(new TestGrandChildEvent(), {});
+    });
 
-            observable.on('test-root', (item : any) => {
-                if (item === data) {
-                    finishTest();
-                } else {
-                    done(new Error('Given data does not match'));
-                }
-            });
+    it("should carry data to the observer", done => {
+      const observable = new Observable(),
+        data = {};
+      let numOfFunctions = 4;
 
-            observable.on('test-root', {
-                update: (item : any) => {
-                    if (item === data) {
-                        finishTest();
-                    } else {
-                        done(new Error('Given data does not match'));
-                    }
-                }
-            });
+      const finishTest = (): void => {
+        if (--numOfFunctions === 0) {
+          done();
+        }
+      };
 
-            observable.on(new TestRootEvent(), (item : any) => {
-                if (item === data) {
-                    finishTest();
-                } else {
-                    done(new Error('Given data does not match'));
-                }
-            });
+      observable.on("test-root", item => {
+        if (item === data) {
+          finishTest();
+        } else {
+          done(new Error("Given data does not match"));
+        }
+      });
 
-            observable.on(new TestRootEvent(), {
-                update: (item : any) => {
-                    if (item === data) {
-                        finishTest();
-                    } else {
-                        done(new Error('Given data does not match'));
-                    }
-                }
-            });
-
-            observable.notify(new TestRootEvent(), data);
-
-            function finishTest() {
-                if (--numOfFunctions === 0) {
-                    done();
-                }
-            }
-        });
-
-        it('should not block code', done => {
-            let observable = new Observable(),
-                stop : number = Date.now() + 25,
-                sync : number,
-                async : number;
-
-            observable.on('test-root', () => {
-                async = Date.now();
-                finishTest();
-            });
-
-            observable.notify(new TestRootEvent(), {});
-
-            while (Date.now() < stop) {}
-
-            sync = Date.now();
-
-            if (async !== undefined) {
-                done(new Error('sync must run first'));
-            }
-
+      observable.on("test-root", {
+        update: item => {
+          if (item === data) {
             finishTest();
+          } else {
+            done(new Error("Given data does not match"));
+          }
+        },
+      });
 
-            function finishTest() {
-                if (sync !== undefined && async !== undefined && async >= sync) {
-                    done();
-                }
-            }
-        });
+      observable.on(new TestRootEvent(), item => {
+        if (item === data) {
+          finishTest();
+        } else {
+          done(new Error("Given data does not match"));
+        }
+      });
 
-        it('should give the name of the called event', done => {
-            let observable = new Observable();
+      observable.on(new TestRootEvent(), {
+        update: item => {
+          if (item === data) {
+            finishTest();
+          } else {
+            done(new Error("Given data does not match"));
+          }
+        },
+      });
 
-            observable.on('test-root', (data, name) => {
-                if (name === 'test-root') {
-                    done();
-                }
-            });
-
-            observable.notify(new TestRootEvent(), {});
-        });
-
-        it('should give the name of the called event if the child event is called', done => {
-            let observable = new Observable();
-
-            observable.on('test-root', (data, name) => {
-                if (name === 'test-child') {
-                    done();
-                }
-            });
-
-            observable.notify(new TestChildEvent(), {});
-        });
-
-        it('should return an promise that is resolved when all observers are called', done => {
-            let observable = new Observable(),
-                shouldBeTrue = false;
-
-            observable.on('test-root', () => {
-                shouldBeTrue = true;
-            });
-
-            observable.notify(new TestRootEvent(), {})
-                .then(() => {
-                    if (shouldBeTrue) {
-                        done();
-                    }
-                });
-        });
+      observable.notify(new TestRootEvent(), data);
     });
 
-    describe('off and cancel', () => {
+    it("should not block code", done => {
+      const observable = new Observable(),
+        stop: number = Date.now() + 25;
+      // eslint-disable-next-line prefer-const
+      let sync = 0,
+        async = 0;
 
-        it('should be possible to cancel an observer', () => {
+      const finishTest = (): void => {
+        if (sync !== 0 && async !== 0 && async >= sync) {
+          done();
+        }
+      };
 
-            // Test remove from every position if added with string
-            for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
-                let observable = new Observable(),
-                    cancel;
+      observable.on("test-root", () => {
+        async = Date.now();
+        finishTest();
+      });
 
-                for (let j = 0; j < NUM_OF_OBSERVERS_TO_ADD; j++) {
-                    let temp = observable.on('test', () => {});
-                    if (i === j) {
-                        cancel = temp;
-                    }
-                }
+      observable.notify(new TestRootEvent(), {});
 
-                cancel.cancel();
-                expect(observable.count()).to.equal(NUM_OF_OBSERVERS_TO_ADD - 1);
-            }
+      while (Date.now() < stop) {}
 
-            // Test remove from every position if added with event
-            for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
-                let observable = new Observable(),
-                    cancel;
+      sync = Date.now();
 
-                for (let j = 0; j < NUM_OF_OBSERVERS_TO_ADD; j++) {
-                    let temp = observable.on(new TestRootEvent(), () => {});
-                    if (i === j) {
-                        cancel = temp;
-                    }
-                }
+      if (async !== 0) {
+        done(new Error("sync must run first"));
+      }
 
-                cancel.cancel();
-                expect(observable.count()).to.equal(NUM_OF_OBSERVERS_TO_ADD - 1);
-            }
-        });
-
-        it('should be possible to call off on a observer class', () => {
-
-            // Test remove from every position if added with string
-            for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
-                let observable = new Observable(),
-                    object;
-
-                for (let j = 0; j < NUM_OF_OBSERVERS_TO_ADD; j++) {
-                    let temp = {update: () => {}};
-                    observable.on('test', temp);
-                    if (i === j) {
-                        object = temp;
-                    }
-                }
-
-                observable.off(object);
-                expect(observable.count()).to.equal(NUM_OF_OBSERVERS_TO_ADD - 1);
-            }
-
-            // Test remove from every position if added with event
-            for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
-                let observable = new Observable(),
-                    object;
-
-                for (let j = 0; j < NUM_OF_OBSERVERS_TO_ADD; j++) {
-                    let temp = {update: () => {}};
-                    observable.on(new TestRootEvent(), temp);
-                    if (i === j) {
-                        object = temp;
-                    }
-                }
-
-                observable.off(object);
-                expect(observable.count()).to.equal(NUM_OF_OBSERVERS_TO_ADD - 1);
-            }
-        });
+      finishTest();
     });
 
-    describe('count and clear', () => {
+    it("should give the name of the called event", done => {
+      const observable = new Observable();
 
-        it('should count the number of items and clear', () => {
-            let observable = new Observable();
+      observable.on("test-root", (data, name) => {
+        if (name === "test-root") {
+          done();
+        }
+      });
 
-            // Add observers with string and check that they are added
-            for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
-                observable.on('test', () => {});
-                expect(observable.count()).to.equal(i + 1);
-            }
-
-            // Clear the list and check that they are removed
-            observable.clear();
-            expect(observable.count()).to.equal(0);
-
-            // Add observers with event and check that they are added
-            for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
-                observable.on(new TestRootEvent(), () => {});
-                expect(observable.count()).to.equal(i + 1);
-            }
-
-            // Clear the list and check that they are removed
-            observable.clear();
-            expect(observable.count()).to.equal(0);
-        });
+      observable.notify(new TestRootEvent(), {});
     });
+
+    it("should give the name of the called event if the child event is called", done => {
+      const observable = new Observable();
+
+      observable.on("test-root", (_, name) => {
+        if (name === "test-child") {
+          done();
+        }
+      });
+
+      observable.notify(new TestChildEvent(), {});
+    });
+
+    it("should return an promise that is resolved when all observers are called", done => {
+      const observable = new Observable();
+      let shouldBeTrue = false;
+
+      observable.on("test-root", () => {
+        shouldBeTrue = true;
+      });
+
+      observable.notify(new TestRootEvent(), {}).then(() => {
+        if (shouldBeTrue) {
+          done();
+        }
+      });
+    });
+  });
+
+  describe("off and cancel", () => {
+    it("should be possible to cancel an observer", () => {
+      // Test remove from every position if added with string
+      for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
+        const observable = new Observable();
+        let cancel: ICancel | undefined;
+
+        for (let j = 0; j < NUM_OF_OBSERVERS_TO_ADD; j++) {
+          const temp = observable.on("test", () => {});
+          if (i === j) {
+            cancel = temp;
+          }
+        }
+
+        if (cancel) cancel.cancel();
+        expect(observable.count()).to.equal(NUM_OF_OBSERVERS_TO_ADD - 1);
+      }
+
+      // Test remove from every position if added with event
+      for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
+        const observable = new Observable();
+        let cancel: ICancel | undefined;
+
+        for (let j = 0; j < NUM_OF_OBSERVERS_TO_ADD; j++) {
+          const temp = observable.on(new TestRootEvent(), () => {});
+          if (i === j) {
+            cancel = temp;
+          }
+        }
+
+        if (cancel) cancel.cancel();
+        expect(observable.count()).to.equal(NUM_OF_OBSERVERS_TO_ADD - 1);
+      }
+    });
+
+    it("should be possible to call off on a observer class", () => {
+      // Test remove from every position if added with string
+      for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
+        const observable = new Observable();
+        let object: IObserver | undefined;
+
+        for (let j = 0; j < NUM_OF_OBSERVERS_TO_ADD; j++) {
+          const temp = { update: (): void => {} };
+          observable.on("test", temp);
+          if (i === j) {
+            object = temp;
+          }
+        }
+
+        if (object) observable.off(object);
+        expect(observable.count()).to.equal(NUM_OF_OBSERVERS_TO_ADD - 1);
+      }
+
+      // Test remove from every position if added with event
+      for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
+        const observable = new Observable();
+        let object: IObserver | undefined;
+
+        for (let j = 0; j < NUM_OF_OBSERVERS_TO_ADD; j++) {
+          const temp = { update: (): void => {} };
+          observable.on(new TestRootEvent(), temp);
+          if (i === j) {
+            object = temp;
+          }
+        }
+
+        if (object) observable.off(object);
+        expect(observable.count()).to.equal(NUM_OF_OBSERVERS_TO_ADD - 1);
+      }
+    });
+  });
+
+  describe("count and clear", () => {
+    it("should count the number of items and clear", () => {
+      const observable = new Observable();
+
+      // Add observers with string and check that they are added
+      for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
+        observable.on("test", () => {});
+        expect(observable.count()).to.equal(i + 1);
+      }
+
+      // Clear the list and check that they are removed
+      observable.clear();
+      expect(observable.count()).to.equal(0);
+
+      // Add observers with event and check that they are added
+      for (let i = 0; i < NUM_OF_OBSERVERS_TO_ADD; i++) {
+        observable.on(new TestRootEvent(), () => {});
+        expect(observable.count()).to.equal(i + 1);
+      }
+
+      // Clear the list and check that they are removed
+      observable.clear();
+      expect(observable.count()).to.equal(0);
+    });
+  });
 });

@@ -1,16 +1,16 @@
-import {IObservableEvent} from "../src/interfaces/observable-event";
+import { IObservableEvent } from "../src/interfaces/observable-event";
 
 export class TestRootEvent implements IObservableEvent {
-    parent: IObservableEvent = null;
-    name: string = 'test-root';
+  parent = null;
+  name = "test-root";
 }
 
 export class TestChildEvent implements IObservableEvent {
-    parent: IObservableEvent = new TestRootEvent();
-    name: string = 'test-child';
+  parent = new TestRootEvent();
+  name = "test-child";
 }
 
 export class TestGrandChildEvent implements IObservableEvent {
-    parent: IObservableEvent = new TestChildEvent();
-    name: string = 'test-grand-child';
+  parent = new TestChildEvent();
+  name = "test-grand-child";
 }

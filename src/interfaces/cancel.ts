@@ -1,3 +1,3 @@
 export interface ICancel {
-    cancel() : boolean;
+  cancel(): boolean;
 }

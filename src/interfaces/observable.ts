@@ -1,18 +1,19 @@
-import {IObserver} from "./observer";
-import {IObservableEvent} from "./observable-event";
-import {ICancel} from "./cancel";
+import { IObservableEvent, IObserver, ICancel } from ".";
+import { ObservableEventType } from "./observable-event";
+import { ObserverCallback } from "./observer";
 
 export interface IObservable {
-    on(type: string | IObservableEvent | (string | IObservableEvent)[], callback: Function | IObserver) : ICancel;
-    off(observer : IObserver) : boolean;
-    count() : number;
-    clear() : void;
+  on(
+    type: ObservableEventType | ObservableEventType[],
+    callback: ObserverCallback | IObserver
+  ): ICancel;
+  off(observer: IObserver): boolean;
+  count(): number;
+  clear(): void;
 
-    notify(event: IObservableEvent, data: any) : Promise<void>;
+  notify(event: IObservableEvent, data: unknown): Promise<void>;
 }
 
-export interface IChangeObservable extends IObservable{
-    hasChanged() : boolean;
-    setChanged() : void;
-    clearChanged() : void;
+export interface IChangeObservable extends IObservable {
+  isChanged: boolean;
 }

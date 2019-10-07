@@ -9,18 +9,47 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc -p ./tsconfig.json",
-    "test": "mocha -r ts-node/register test/observable.ts test/change-observable.ts"
+    "test": "mocha -r ts-node/register test/observable.ts test/change-observable.ts",
+    "lint": "eslint --max-warnings 0 --fix -c .eslintrc.js --cache --ext .js,.jsx,.ts,.tsx ."
   },
   "devDependencies": {
+    "@commitlint/cli": "^8.2.0",
+    "@commitlint/config-conventional": "^8.2.0",
     "@types/chai": "^4.0.3",
     "@types/mocha": "^2.2.41",
-    "chai": "^4.1.1",
-    "mocha": "^3.5.0",
-    "ts-node": "^3.3.0",
-    "typescript": "^2.4.2"
+    "@typescript-eslint/eslint-plugin": "^2.3.2",
+    "@typescript-eslint/parser": "^2.3.2",
+    "babel-eslint": "^10.0.3",
+    "chai": "^4.2.0",
+    "eslint": "^6.5.1",
+    "eslint-config-prettier": "^6.4.0",
+    "eslint-plugin-flowtype": "^4.3.0",
+    "eslint-plugin-import": "^2.18.2",
+    "husky": "^3.0.8",
+    "lint-staged": "^9.4.1",
+    "mocha": "^6.2.1",
+    "ts-node": "^8.4.1",
+    "typescript": "^3.6"
   },
   "dependencies": {
     "@types/core-js": "^0.9.42",
     "core-js": "^2.5.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "tsc -p tsconfig.json --noEmit && lint-staged",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "lint-staged": {
+    "**/*.{js,jsx,ts,tsx}": [
+      "yarn run --silent lint -- --ignore-pattern '!.eslintrc.js'",
+      "git add"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
   }
 }
